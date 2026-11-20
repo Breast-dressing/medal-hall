@@ -29,9 +29,9 @@ struct RankView: View {
 
                     if data.tabs.count > 1 {
                         Picker("排行榜分类", selection: $selectedTab) {
-                            ForEach(Array(data.tabs.enumerated()), id: \.offset) { tabIndex, result in
-                                Text(result.tab.name.isEmpty ? "Tab \(tabIndex + 1)" : result.tab.name)
-                                    .tag(tabIndex)
+                            ForEach(Array(data.tabs.enumerated()), id: \.offset) { pair in
+                                Text(pair.element.tab.name.isEmpty ? "Tab \(pair.offset + 1)" : pair.element.tab.name)
+                                    .tag(pair.offset)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -90,9 +90,9 @@ struct RankView: View {
             EmptyStateCard(text: result.emptyText ?? "暂无数据")
         } else {
             VStack(spacing: 0) {
-                ForEach(Array(result.entries.enumerated()), id: \.element.id) { index, entry in
-                    rankRow(entry)
-                    if index < result.entries.count - 1 {
+                ForEach(Array(result.entries.enumerated()), id: \.element.id) { pair in
+                    rankRow(pair.element)
+                    if pair.offset < result.entries.count - 1 {
                         Divider().padding(.leading, 56)
                     }
                 }

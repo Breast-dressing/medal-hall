@@ -15,7 +15,8 @@ struct StatsRowView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: spacing) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+            ForEach(Array(items.enumerated()), id: \.offset) { pair in
+                let item = pair.element
                 if let action = item.action {
                     Button(action: action) {
                         cell(item)
@@ -96,14 +97,14 @@ struct RingHeroView: View {
             Circle()
                 .fill(Theme.card)
                 .frame(width: 32, height: 32)
-            ForEach(Array(items.prefix(4).enumerated()), id: \.offset) { index, item in
-                let radius = radii[min(index, radii.count - 1)]
+            ForEach(Array(items.prefix(4).enumerated()), id: \.offset) { pair in
+                let radius = radii[min(pair.offset, radii.count - 1)]
                 Circle()
-                    .stroke(item.color.opacity(0.16), lineWidth: lineWidth)
+                    .stroke(pair.element.color.opacity(0.16), lineWidth: lineWidth)
                     .frame(width: radius * 2, height: radius * 2)
                 Circle()
-                    .trim(from: 0, to: min(max(item.percent, 0.004), 1))
-                    .stroke(item.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .trim(from: 0, to: min(max(pair.element.percent, 0.004), 1))
+                    .stroke(pair.element.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .frame(width: radius * 2, height: radius * 2)
             }

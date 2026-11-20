@@ -13,8 +13,8 @@ struct MedalsListView: View {
 
                     if page.tabs.count > 1 {
                         Picker("勋章分类", selection: $selectedTab) {
-                            ForEach(Array(page.tabs.enumerated()), id: \.offset) { tabIndex, result in
-                                Text(tabTitle(result, index: tabIndex)).tag(tabIndex)
+                            ForEach(Array(page.tabs.enumerated()), id: \.offset) { pair in
+                                Text(tabTitle(pair.element, index: pair.offset)).tag(pair.offset)
                             }
                         }
                         .pickerStyle(.segmented)

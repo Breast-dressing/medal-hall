@@ -17,20 +17,20 @@ final class HonorTests: XCTestCase {
         let inner = """
         [{"Title":"完成任务@石榴花。","Date":"2026年11月01日 12:34","Value":"+12.5"},{"Title":"充值@石榴枝","Date":"2026年11月02日 09:00","Value":"+30"}]
         """
-        let har: [String: Any] = [
-            "log": [
-                "entries": [
-                    [
-                        "request": ["url": "https://u6.y.qq.com/cgi-bin/musics.fcg?_webcgikey=GetFamilyHonorRecord&_=123"],
-                        "response": ["content": ["text": inner]]
-                    ],
-                    [
-                        "request": ["url": "https://other.example.com/api"],
-                        "response": ["content": ["text": "[]"]]
-                    ]
-                ]
-            ]
+        let honorRequest: [String: Any] = [
+            "url": "https://u6.y.qq.com/cgi-bin/musics.fcg?_webcgikey=GetFamilyHonorRecord&_=123"
         ]
+        let honorContent: [String: Any] = ["text": inner]
+        let honorResponse: [String: Any] = ["content": honorContent]
+        let honorEntry: [String: Any] = ["request": honorRequest, "response": honorResponse]
+
+        let otherRequest: [String: Any] = ["url": "https://other.example.com/api"]
+        let otherContent: [String: Any] = ["text": "[]"]
+        let otherResponse: [String: Any] = ["content": otherContent]
+        let otherEntry: [String: Any] = ["request": otherRequest, "response": otherResponse]
+
+        let entries: [[String: Any]] = [honorEntry, otherEntry]
+        let har: [String: Any] = ["log": ["entries": entries]]
         let data = try JSONSerialization.data(withJSONObject: har)
         let result = try HonorImporter.parse(data: data, fileName: "honor.har")
 
@@ -42,7 +42,8 @@ final class HonorTests: XCTestCase {
     }
 
     func testParseHARMissingEntriesThrows() throws {
-        let har: [String: Any] = ["log": ["entries": []]]
+        let entries: [[String: Any]] = []
+        let har: [String: Any] = ["log": ["entries": entries]]
         let data = try JSONSerialization.data(withJSONObject: har)
         XCTAssertThrowsError(try HonorImporter.parse(data: data, fileName: "empty.har"))
     }
@@ -124,6 +125,8 @@ final class HonorTests: XCTestCase {
     }
 
     func testDayLabel() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")
@@ -131,10 +134,10 @@ final class HonorTests: XCTestCase {
         guard let now = formatter.date(from: "2026-11-18") else {
             return XCTFail("日期构造失败")
         }
-        XCTAssertEqual(HonorDate.dayLabel("2026年11月18日", now: now), "今天")
-        XCTAssertEqual(HonorDate.dayLabel("2026年11月17日", now: now), "昨天")
-        XCTAssertEqual(HonorDate.dayLabel("2026年11月01日", now: now), "11月1日 · 周日")
-        XCTAssertEqual(HonorDate.dayLabel("未知日期", now: now), "未知日期")
+        XCTAssertEqual(HonorDate.dayLabel("2026年11月18日", now: now, calendar: calendar), "今天")
+        XCTAssertEqual(HonorDate.dayLabel("2026年11月17日", now: now, calendar: calendar), "昨天")
+        XCTAssertEqual(HonorDate.dayLabel("2026年11月01日", now: now, calendar: calendar), "11月1日 · 周日")
+        XCTAssertEqual(HonorDate.dayLabel("未知日期", now: now, calendar: calendar), "未知日期")
     }
 
     func testDateKeyAndTimeText() {

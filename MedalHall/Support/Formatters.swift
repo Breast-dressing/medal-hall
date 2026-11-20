@@ -91,12 +91,14 @@ enum HonorDate {
         return first.map(String.init) ?? "未知日期"
     }
 
-    /// 「今天 / 昨天 / 11月1日 · 周六」。
-    static func dayLabel(_ dateKey: String, now: Date = Date()) -> String {
+    /// 「今天 / 昨天 / 11月1日 · 周六」。与传入的 now 比较，便于测试与缓存。
+    static func dayLabel(_ dateKey: String, now: Date = Date(), calendar: Calendar = .current) -> String {
         guard let date = parse(dateKey) else { return dateKey }
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "今天" }
-        if calendar.isDateInYesterday(date) { return "昨天" }
+        let startOfNow = calendar.startOfDay(for: now)
+        let startOfDate = calendar.startOfDay(for: date)
+        let days = calendar.dateComponents([.day], from: startOfDate, to: startOfNow).day ?? 0
+        if days == 0 { return "今天" }
+        if days == 1 { return "昨天" }
         let month = calendar.component(.month, from: date)
         let day = calendar.component(.day, from: date)
         let weekday = calendar.component(.weekday, from: date)

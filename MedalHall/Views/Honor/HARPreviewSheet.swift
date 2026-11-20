@@ -32,8 +32,8 @@ struct HARPreviewSheet: View {
                 ForEach(result.groups) { group in
                     Section {
                         DisclosureGroup(isExpanded: binding(for: group.name)) {
-                            ForEach(Array(group.records.enumerated()), id: \.offset) { _, record in
-                                recordRow(record)
+                            ForEach(Array(group.records.enumerated()), id: \.offset) { pair in
+                                recordRow(pair.element)
                             }
                         } label: {
                             memberLabel(group)

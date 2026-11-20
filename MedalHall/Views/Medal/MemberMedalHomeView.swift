@@ -158,16 +158,16 @@ struct MemberMedalHomeView: View {
                 EmptyStateCard(text: groups.isEmpty ? "暂无荣誉值记录" : "最近一周暂无记录")
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(week.enumerated()), id: \.element.id) { index, group in
+                    ForEach(Array(week.enumerated()), id: \.element.id) { pair in
                         NavigationLink(value: MedalRoute.honorDay(
                             memberName: model.member.title,
-                            dateKey: group.dateKey
+                            dateKey: pair.element.dateKey
                         )) {
-                            HonorDayRowView(group: group)
+                            HonorDayRowView(group: pair.element)
                         }
                         .buttonStyle(.plain)
 
-                        if index < week.count - 1 {
+                        if pair.offset < week.count - 1 {
                             Divider().padding(.leading, 16)
                         }
                     }

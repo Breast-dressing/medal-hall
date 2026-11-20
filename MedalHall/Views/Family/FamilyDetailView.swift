@@ -152,15 +152,15 @@ struct FamilyDetailView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 26)
                 } else {
-                    ForEach(Array(shown.enumerated()), id: \.element.id) { index, member in
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { pair in
                         Button {
-                            coverMember = member
+                            coverMember = pair.element
                         } label: {
-                            unqualifiedRow(member)
+                            unqualifiedRow(pair.element)
                         }
                         .buttonStyle(.plain)
 
-                        if index < shown.count - 1 {
+                        if pair.offset < shown.count - 1 {
                             Divider().padding(.leading, 60)
                         }
                     }

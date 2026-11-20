@@ -97,11 +97,11 @@ struct FeatureStatView: View {
                 .frame(height: 280)
 
                 VStack(alignment: .trailing) {
-                    ForEach(Array(ticks.enumerated()), id: \.offset) { index, tick in
-                        Text(tickText(tick))
+                    ForEach(Array(ticks.enumerated()), id: \.offset) { pair in
+                        Text(tickText(pair.element))
                             .font(.system(size: 12))
                             .foregroundStyle(Theme.darkSecondary)
-                        if index < ticks.count - 1 {
+                        if pair.offset < ticks.count - 1 {
                             Spacer()
                         }
                     }

@@ -17,8 +17,8 @@ final class MedalHallUITests: XCTestCase {
         let app = launchApp()
 
         XCTAssertTrue(app.staticTexts["我的"].waitForExistence(timeout: 15))
-        XCTAssertTrue(app.staticTexts["添加家族后显示家族荣誉环"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["选择成员"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["添加家族后显示家族荣誉环"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["选择成员，在设置中选择当前归属成员"].waitForExistence(timeout: 5))
 
         let settings = app.buttons["设置"]
         XCTAssertTrue(settings.waitForExistence(timeout: 5))
@@ -36,15 +36,15 @@ final class MedalHallUITests: XCTestCase {
         let app = launchApp()
         XCTAssertTrue(app.staticTexts["我的"].waitForExistence(timeout: 15))
 
-        let musicTab = app.tabBars.buttons["音乐"]
+        let musicTab = app.buttons["音乐"].firstMatch
         XCTAssertTrue(musicTab.waitForExistence(timeout: 5))
         musicTab.tap()
         XCTAssertTrue(app.staticTexts["QQ 音乐的音乐数据尚未接入"].waitForExistence(timeout: 5))
 
-        let profileTab = app.tabBars.buttons["我的"]
+        let profileTab = app.buttons["我的"].firstMatch
         XCTAssertTrue(profileTab.waitForExistence(timeout: 5))
         profileTab.tap()
-        XCTAssertTrue(app.staticTexts["添加家族后显示家族荣誉环"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["添加家族后显示家族荣誉环"].waitForExistence(timeout: 5))
     }
 
     /// 无障碍审计：收集问题写进附件。配置里 accessibility_audit 为 warn，不阻断流水线。

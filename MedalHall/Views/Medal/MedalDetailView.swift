@@ -154,9 +154,9 @@ struct MedalDetailView: View {
                 .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, level in
-                    levelRow(level)
-                    if index < items.count - 1 {
+                ForEach(Array(items.enumerated()), id: \.element.id) { pair in
+                    levelRow(pair.element)
+                    if pair.offset < items.count - 1 {
                         Divider().padding(.leading, 66)
                     }
                 }

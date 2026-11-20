@@ -281,17 +281,17 @@ struct HomeView: View {
                 alignment: .leading,
                 spacing: 12
             ) {
-                ForEach(Array(appModel.families.enumerated()), id: \.element.id) { index, family in
+                ForEach(Array(appModel.families.enumerated()), id: \.element.id) { pair in
                     Button {
-                        path.append(.family(family.id))
+                        path.append(.family(pair.element.id))
                     } label: {
                         FamilyCardView(
-                            family: family,
-                            color: Theme.ringColors[index % Theme.ringColors.count]
+                            family: pair.element,
+                            color: Theme.ringColors[pair.offset % Theme.ringColors.count]
                         )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("打开\(family.displayName)")
+                    .accessibilityLabel("打开\(pair.element.displayName)")
                 }
             }
         }

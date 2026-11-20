@@ -42,6 +42,7 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UIUserInterfaceStyle: Light
+        LSRequiresIPhoneOS: true
         ITSAppUsesNonExemptEncryption: false
   MedalHallTests:
     type: bundle.unit-test

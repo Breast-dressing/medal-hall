@@ -37,16 +37,16 @@ struct HonorRecordsView: View {
                     EmptyStateCard(text: "暂无荣誉值记录")
                 } else {
                     VStack(spacing: 0) {
-                        ForEach(Array(groups.enumerated()), id: \.element.id) { index, group in
+                        ForEach(Array(groups.enumerated()), id: \.element.id) { pair in
                             NavigationLink(value: MedalRoute.honorDay(
                                 memberName: memberName,
-                                dateKey: group.dateKey
+                                dateKey: pair.element.dateKey
                             )) {
-                                HonorDayRowView(group: group)
+                                HonorDayRowView(group: pair.element)
                             }
                             .buttonStyle(.plain)
 
-                            if index < groups.count - 1 {
+                            if pair.offset < groups.count - 1 {
                                 Divider().padding(.leading, 16)
                             }
                         }
