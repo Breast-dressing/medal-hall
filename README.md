@@ -44,6 +44,29 @@ MedalHallUITests/ 关键流程 + 无障碍审计
 4. **近 7 天条形图**：有 HAR 导入的荣誉记录时按真实数据绘制；没有数据时沿用原版的占位高度（原版即为此实现）。
 5. **巅峰制作人/乐迷灯牌/星光发电站**：数据接口未接入，保持原版的「暂无数据」空态。
 
+## 构建与产物
+
+仓库：<https://github.com/Breast-dressing/medal-hall>
+
+最近一次 `Build & Test`（[run 44725373715](https://github.com/Breast-dressing/medal-hall/actions/runs/44725373715)）：
+
+- 工具链：Xcode 27.2（27B52）+ iOS 27.2 SDK；产物 `Info.plist` 里 `DTSDKName = iphoneos27.2`、`MinimumOSVersion = 27.0`
+- 测试：36 个测试全部通过（逻辑测试 + UI 关键流程 + 无障碍审计），模拟器 iPhone 18 Pro (iOS 27.2)
+- 产物：`MedalHall-unsigned.ipa`（Job artifact `MedalHall-unsigned-ipa`）
+- Bundle ID：`com.breastdressing.medalhall`，显示名「勋章馆」
+
+### 怎么装
+
+IPA 是**未签名**的，不能直接双击安装，需要先用你自己的 Apple ID / 证书重签名：
+
+- Sideloadly / AltStore / TrollStore 等工具导入 `MedalHall-unsigned.ipa`
+- 或用 `codesign` + 自己的描述文件重签后 `xcrun devicectl device install app`
+
+### 怎么用
+
+打开 App → 右上角齿轮 → 粘贴家族链接（`https://i2.y.qq.com/?family_id=...`）添加家族 → 在「当前归属成员」里选成员并保存。
+首页与家族详情会直接请求 QQ 音乐勋章馆接口（签名、SSR 解析都在 App 内完成，不再需要 Node 中转）。
+
 ## 本地开发
 
 没有 Mac 也能开发：改完 push，CI 用 Xcode 27.2 在 `xcode-27` 镜像上编译、跑测试并产出未签名 IPA。
