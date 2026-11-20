@@ -71,14 +71,15 @@ struct RingItem: Identifiable {
 
 /// 三环进度：系统 `HKActivityRingView` + 图例。
 ///
-/// 圆环本身完全交给系统控件（`ActivityRingsView`），这里只负责排版与图例。
+/// 圆环完全由系统控件绘制；`HKActivityRingView` 自带深色底片，所以用一块深色圆角卡片承载它，
+/// 图例也放在卡片里，避免深色底片直接落在浅色页面上。
 struct RingHeroView: View {
     var items: [RingItem]
     var showsLegend: Bool = true
-    var size: CGFloat = 200
+    var size: CGFloat = 180
 
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             ActivityRingsView(items: items)
                 .frame(width: size, height: size)
                 .accessibilityElement(children: .ignore)
@@ -88,7 +89,13 @@ struct RingHeroView: View {
                 legend
             }
         }
+        .padding(12)
         .frame(maxWidth: .infinity)
+        .background {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(Color(white: 0.05))
+                .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 6)
+        }
     }
 
     private var accessibilityText: String {
@@ -105,7 +112,7 @@ struct RingHeroView: View {
                             .frame(width: 8, height: 8)
                         Text(item.label)
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(item.color)
+                            .foregroundStyle(.white.opacity(0.9))
                     }
                     Text(item.text)
                         .font(.system(size: 16, weight: .bold))
@@ -118,6 +125,9 @@ struct RingHeroView: View {
 }
 
 /// 近 7 天荣誉条形图。使用系统 Swift Charts（`Chart` + `BarMark`），不手绘条形。
+///
+/// Swift Charts 会把同一 X 位置的多个 BarMark 默认堆叠，所以轨道和填充拆成两张参数完全一致的
+/// 图表叠放：底层是灰色满高轨道，上层是荣誉值填充，两者的绘图区严格对齐。
 struct BarChartView: View {
     var title: String
     /// 真实数据（周一…周日）；为空或全 0 时使用原 Web 版的占位高度。
@@ -155,47 +165,67 @@ struct BarChartView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
                 .accessibilityAddTraits(.isHeader)
 
-            Chart {
-                ForEach(bars) { bar in
-                    BarMark(
-                        x: .value("星期", bar.index),
-                        y: .value("轨道", 1.0),
-                        width: .fixed(22)
-                    )
-                    .foregroundStyle(Theme.barTrack)
-                    .cornerRadius(11)
+            ZStack {
+                trackChart
+                valueChart
+            }
+            .frame(height: 150)
 
-                    BarMark(
-                        x: .value("星期", bar.index),
-                        y: .value("荣誉", bar.fraction),
-                        width: .fixed(22)
-                    )
-                    .foregroundStyle(fill)
-                    .cornerRadius(11)
-                }
-            }
-            .chartXScale(domain: -0.5...6.5)
-            .chartYScale(domain: 0...1)
-            .chartYAxis(.hidden)
-            .chartXAxis {
-                AxisMarks(values: Array(0...6)) { value in
-                    AxisValueLabel {
-                        if let index = value.as(Int.self), labels.indices.contains(index) {
-                            Text(labels[index])
-                                .font(.system(size: 13))
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                    }
-                }
-            }
-            .frame(height: 168)
-            .accessibilityLabel(title)
+            labelsRow
         }
+    }
+
+    private var trackChart: some View {
+        Chart {
+            ForEach(bars) { bar in
+                BarMark(
+                    x: .value("星期", bar.index),
+                    y: .value("轨道", 1.0),
+                    width: .fixed(22)
+                )
+                .foregroundStyle(Theme.barTrack)
+                .cornerRadius(11)
+            }
+        }
+        .chartXScale(domain: -0.5...6.5)
+        .chartYScale(domain: 0.0...1.0)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+    }
+
+    private var valueChart: some View {
+        Chart {
+            ForEach(bars) { bar in
+                BarMark(
+                    x: .value("星期", bar.index),
+                    y: .value("荣誉", bar.fraction),
+                    width: .fixed(22)
+                )
+                .foregroundStyle(fill)
+                .cornerRadius(11)
+            }
+        }
+        .chartXScale(domain: -0.5...6.5)
+        .chartYScale(domain: 0.0...1.0)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+    }
+
+    private var labelsRow: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(labels.enumerated()), id: \.offset) { pair in
+                Text(pair.element)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.secondaryText)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
