@@ -1,0 +1,91 @@
+name: MedalHall
+options:
+  bundleIdPrefix: com.breastdressing
+  deploymentTarget:
+    iOS: "27.0"
+  createIntermediateGroups: true
+  developmentLanguage: zh-Hans
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    IPHONEOS_DEPLOYMENT_TARGET: "27.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  MedalHall:
+    type: application
+    platform: iOS
+    sources:
+      - path: MedalHall
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.breastdressing.medalhall
+        PRODUCT_NAME: MedalHall
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        ENABLE_PREVIEWS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: 勋章馆
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIUserInterfaceStyle: Light
+        ITSAppUsesNonExemptEncryption: false
+  MedalHallTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: MedalHallTests
+    dependencies:
+      - target: MedalHall
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.breastdressing.medalhall.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/MedalHall.app/MedalHall"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+  MedalHallUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: MedalHallUITests
+    dependencies:
+      - target: MedalHall
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.breastdressing.medalhall.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MedalHall
+schemes:
+  MedalHall:
+    build:
+      targets:
+        MedalHall: all
+        MedalHallTests: [test]
+        MedalHallUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - MedalHallTests
+        - MedalHallUITests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

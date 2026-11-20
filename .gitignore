@@ -1,0 +1,8 @@
+.DS_Store
+build/
+.build-test-derived-data/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+Config/Info.plist
+xcuserdata/

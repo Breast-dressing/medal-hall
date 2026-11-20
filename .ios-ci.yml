@@ -1,0 +1,25 @@
+# ios-ci-workflows 的 App 配置：所有工作流都从这里读设置。
+# 完整说明见 https://github.com/wenjinliuu/ios-ci-workflows/blob/main/docs/config.md
+
+workdir: .
+project: MedalHall.xcodeproj
+scheme: MedalHall
+bundle_id: com.breastdressing.medalhall
+display_name: 勋章馆
+sync_command: 'true'
+generate_command: xcodegen generate
+
+# 需求指定：使用 iOS 27.2 SDK 开发，因此工具链固定在 Xcode 27.2 / iOS 27.2 模拟器。
+toolchain:
+  xcode: '27.2'
+  simulator: iPhone 18 Pro
+  ios: '27.2'
+
+build_test:
+  accessibility_audit: warn
+  ui_test_target: MedalHallUITests
+  commit_recorded_snapshots: false
+
+testflight:
+  entitlement_mode: none
+  acceptance_issue: false

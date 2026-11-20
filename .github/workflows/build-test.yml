@@ -1,0 +1,190 @@
+name: Build & Test
+
+# 按 ios-ci-workflows 的 Skill 接入：
+# 配置仍放在 .ios-ci.yml，校验/选模拟器/测试报告都复用中央仓库（固定到 v1.1.0 的提交）。
+# 唯一偏离：需求指定 iOS 27.2 SDK，而中央仓库的可复用工作流固定跑在 macos-26（只装到 Xcode 26.6），
+# 所以这个入口把它声明的步骤搬到带 Xcode 27.2 的 xcode-27 镜像上，然后额外产出未签名 IPA。
+
+on:
+  push:
+    paths-ignore: ['**/*.md', 'docs/**']
+  pull_request:
+    paths-ignore: ['**/*.md', 'docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-test-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      config: ${{ steps.read.outputs.config }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .ios-ci.yml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: wenjinliuu/ios-ci-workflows
+          ref: df71d6096d6d39ea799179cb2635703548b07ae0 # v1.1.0
+          path: .ci-workflows
+          persist-credentials: false
+      - id: read
+        run: python3 .ci-workflows/scripts/ios-ci-config.py
+
+  test:
+    needs: config
+    runs-on: xcode-27
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ${{ fromJSON(needs.config.outputs.config).workdir }}
+        shell: bash
+    env:
+      CONFIG: ${{ needs.config.outputs.config }}
+      PROJECT: ${{ fromJSON(needs.config.outputs.config).project }}
+      SCHEME: ${{ fromJSON(needs.config.outputs.config).scheme }}
+      BUNDLE_ID: ${{ fromJSON(needs.config.outputs.config).bundle_id }}
+      DERIVED_DATA: ${{ github.workspace }}/.build-test-derived-data
+      OUT: build/test
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Fetch ios-ci-workflows
+        uses: actions/checkout@v7
+        with:
+          repository: wenjinliuu/ios-ci-workflows
+          ref: df71d6096d6d39ea799179cb2635703548b07ae0 # v1.1.0
+          path: .ci-workflows
+          persist-credentials: false
+      - name: Install xcbeautify
+        run: |
+          set -euo pipefail
+          curl -fLsS https://github.com/cpisciotta/xcbeautify/releases/download/3.2.1/xcbeautify-3.2.1-arm64-apple-macosx.zip \
+            -o "$RUNNER_TEMP/xcbeautify.zip"
+          echo "ed32972e41bc3aa19588f8b0f4a0209ef70c663ad60bbf4ad84a2de73355d637  $RUNNER_TEMP/xcbeautify.zip" | shasum -a 256 -c -
+          unzip -oq "$RUNNER_TEMP/xcbeautify.zip" -d "$RUNNER_TEMP/xcbeautify"
+      - name: Prepare Xcode, project and Simulator
+        id: prep
+        uses: ./.ci-workflows/.github/actions/prepare
+        with:
+          config: ${{ needs.config.outputs.config }}
+          simulator: 'true'
+      - name: Verify the iOS 27.2 SDK is selected
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcodebuild -showsdks | tee "$RUNNER_TEMP/sdks.txt"
+          grep -q 'iphoneos27.2' "$RUNNER_TEMP/sdks.txt" || {
+            echo '::error::选中的 Xcode 没有 iPhoneOS 27.2 SDK，检查 .ios-ci.yml 的 toolchain.xcode'; exit 1; }
+      - name: Build and run tests without signing
+        id: test
+        env:
+          NSUnbufferedIO: YES
+        run: |
+          set +e -uo pipefail
+          mkdir -p "$OUT"
+          xcodebuild test -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
+            -destination "platform=iOS Simulator,id=${{ steps.prep.outputs.udid }}" \
+            -derivedDataPath "$DERIVED_DATA" -resultBundlePath "$OUT/Test.xcresult" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$OUT/xcodebuild.log" \
+            | "$RUNNER_TEMP/xcbeautify/xcbeautify" --renderer github-actions
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          APP="$DERIVED_DATA/Build/Products/Debug-iphonesimulator/${SCHEME}.app"
+          if [ -d "$APP" ]; then echo built=true >> "$GITHUB_OUTPUT"; else echo built=false >> "$GITHUB_OUTPUT"; fi
+      - name: Install, launch and capture evidence
+        if: ${{ !cancelled() && steps.test.outputs.built == 'true' }}
+        run: |
+          set -euo pipefail
+          APP="$DERIVED_DATA/Build/Products/Debug-iphonesimulator/${SCHEME}.app"
+          test -f "$APP/Assets.car"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = "$BUNDLE_ID"
+          xcrun simctl install "${{ steps.prep.outputs.udid }}" "$APP"
+          xcrun simctl launch "${{ steps.prep.outputs.udid }}" "$BUNDLE_ID"
+          sleep 4
+          xcrun simctl io "${{ steps.prep.outputs.udid }}" screenshot "$OUT/launch.png"
+          xcrun simctl spawn "${{ steps.prep.outputs.udid }}" log show --last 2m --style compact \
+            --predicate "process == '${SCHEME}'" > "$OUT/app.log" 2>&1 || true
+      - name: Write test report
+        id: report
+        if: ${{ !cancelled() }}
+        env:
+          XCRESULT: build/test/Test.xcresult
+          REPORT_DIR: build/test/report
+          BUILD_LOG: build/test/xcodebuild.log
+          BUILT: ${{ steps.test.outputs.built }}
+          DEVICE: ${{ steps.prep.outputs.name }} (${{ steps.prep.outputs.runtime }})
+          SUITE: default
+          TEST_PLAN: ''
+          ACCESSIBILITY_MODE: ${{ fromJSON(needs.config.outputs.config).build_test.accessibility_audit }}
+          ACCESSIBILITY_PATTERN: ${{ fromJSON(needs.config.outputs.config).build_test.accessibility_test_pattern }}
+        run: python3 "$GITHUB_WORKSPACE/.ci-workflows/scripts/xcresult-report.py"
+      - name: Upload test report, screenshot and logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-test-${{ github.run_number }}
+          path: build/test
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Apply pass/fail rules
+        if: ${{ !cancelled() }}
+        env:
+          BUILT: ${{ steps.test.outputs.built }}
+          EXIT_CODE: ${{ steps.test.outputs.exit_code }}
+          TEST_FAILURES: ${{ steps.report.outputs.test_failures }}
+          SNAPSHOT_FAILURES: ${{ steps.report.outputs.snapshot_failures }}
+          ACCESSIBILITY_FAILURES: ${{ steps.report.outputs.accessibility_failures }}
+          ACCESSIBILITY_MODE: ${{ fromJSON(needs.config.outputs.config).build_test.accessibility_audit }}
+        run: |
+          set -euo pipefail
+          if [ "$BUILT" != true ]; then echo '::error::Build failed; see the test report and xcodebuild.log'; exit 1; fi
+          tests=${TEST_FAILURES:-0}; snapshots=${SNAPSHOT_FAILURES:-0}; audits=${ACCESSIBILITY_FAILURES:-0}
+          blocking=$(( tests + snapshots ))
+          if [ "$ACCESSIBILITY_MODE" = fail ]; then
+            blocking=$(( blocking + audits ))
+          elif [ "$audits" -gt 0 ]; then
+            echo "::warning::$audits accessibility audit failure(s); warning only"
+          fi
+          if [ "$blocking" -gt 0 ]; then echo "::error::$blocking blocking test failure(s); see the test report"; exit 1; fi
+          if [ "${EXIT_CODE:-1}" != 0 ] && [ $(( tests + snapshots + audits )) -eq 0 ]; then
+            echo "::error::xcodebuild test exited with $EXIT_CODE without reporting a test failure; see xcodebuild.log"; exit 1
+          fi
+      - name: Archive without signing
+        run: |
+          set -euo pipefail
+          xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$OUT/MedalHall.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
+            2>&1 | tee "$OUT/archive.log" | "$RUNNER_TEMP/xcbeautify/xcbeautify" --renderer github-actions
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP="$OUT/MedalHall.xcarchive/Products/Applications/${SCHEME}.app"
+          test -d "$APP"
+          rm -rf "$OUT/Payload"
+          mkdir -p "$OUT/Payload"
+          cp -R "$APP" "$OUT/Payload/${SCHEME}.app"
+          ( cd "$OUT" && zip -qry "${SCHEME}-unsigned.ipa" Payload )
+          ls -lh "$OUT/${SCHEME}-unsigned.ipa"
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v7
+        with:
+          name: MedalHall-unsigned-ipa
+          path: ${{ fromJSON(needs.config.outputs.config).workdir }}/build/test/MedalHall-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
