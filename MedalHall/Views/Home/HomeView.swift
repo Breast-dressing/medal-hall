@@ -167,45 +167,36 @@ struct HomeView: View {
         .cardStyle()
     }
 
+    /// 成员资料行。原版没有跳转，这里保持纯展示，不加导航入口。
     private func profileRow(member: Member) -> some View {
-        Button {
-            openMemberHome(member: member)
-        } label: {
-            HStack(spacing: 12) {
-                RemoteAvatar(url: member.pic, size: 56)
+        HStack(spacing: 12) {
+            RemoteAvatar(url: member.pic, size: 56)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(member.displayName)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(member.displayName)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.primary)
 
-                    HStack(spacing: 6) {
-                        if let familyName = familyName(for: member), !familyName.isEmpty {
-                            Text(familyName)
-                                .font(.system(size: 13))
-                                .foregroundStyle(Theme.secondaryText)
-                        }
-                        if !member.medalText.isEmpty {
-                            TagPill(text: member.medalText)
-                        }
-                        if !member.fanBadge.isEmpty {
-                            TagPill(text: member.fanBadge, color: Theme.orange, background: Theme.orange.opacity(0.12))
-                        }
+                HStack(spacing: 6) {
+                    if let familyName = familyName(for: member), !familyName.isEmpty {
+                        Text(familyName)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                    if !member.medalText.isEmpty {
+                        TagPill(text: member.medalText)
+                    }
+                    if !member.fanBadge.isEmpty {
+                        TagPill(text: member.fanBadge, color: Theme.orange, background: Theme.orange.opacity(0.12))
                     }
                 }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.tertiaryText)
             }
-            .padding(.top, 16)
-            .padding(.horizontal, 4)
-            .contentShape(Rectangle())
+
+            Spacer()
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(member.displayName) 的勋章馆")
+        .padding(.top, 16)
+        .padding(.horizontal, 4)
+        .accessibilityElement(children: .combine)
     }
 
     private func memberStats(member: Member) -> some View {
@@ -302,10 +293,6 @@ struct HomeView: View {
     private func familyName(for member: Member) -> String? {
         guard let familyID = member.familyId else { return nil }
         return appModel.families.first(where: { $0.id == familyID })?.displayName
-    }
-
-    private func openMemberHome(member: Member) {
-        coverRequest = MedalCoverRequest(member: member, model: summary, initialRoute: nil)
     }
 
     private func openMedalsList(member: Member) {

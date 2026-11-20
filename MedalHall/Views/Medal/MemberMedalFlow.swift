@@ -4,6 +4,7 @@ import SwiftUI
 struct MemberMedalFlow: View {
     let member: Member
 
+    @Environment(\.dismiss) private var dismiss
     @State private var model: MemberMedalModel
     @State private var path: [MedalRoute]
 
@@ -20,6 +21,11 @@ struct MemberMedalFlow: View {
     var body: some View {
         NavigationStack(path: $path) {
             MemberMedalHomeView(model: model, path: $path)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("关闭") { dismiss() }
+                    }
+                }
                 .navigationDestination(for: MedalRoute.self) { route in
                     destination(for: route)
                 }

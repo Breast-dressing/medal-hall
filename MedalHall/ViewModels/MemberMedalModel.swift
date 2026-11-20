@@ -102,6 +102,10 @@ final class MemberMedalModel {
     }
 
     func load(url: String) async {
+        if DemoSupport.isEnabled {
+            applyDemoData()
+            return
+        }
         if case .loading = phase { return }
         phase = .loading
         do {
@@ -114,6 +118,23 @@ final class MemberMedalModel {
         } catch {
             phase = .failed(error.localizedDescription)
         }
+    }
+
+    /// 截图/UI 测试用的示例数据（`-demo-data` 启动时生效）。
+    private func applyDemoData() {
+        let page = DemoSupport.medalPage
+        self.page = page
+        desc = page.desc
+        weekRank = 1
+        monthRank = 2
+        weekTabName = "周榜"
+        monthTabName = "月榜"
+        skinCount = 272
+        skinMedal = DemoSupport.skinMedal
+        fan = DemoSupport.fan
+        rankScheme = DemoSupport.medalScheme
+        honorRecords = Persistence.honorRecords(for: member.title)
+        phase = .loaded
     }
 
     /// 对应原版 fetchArtistRankInfo：在「乐迷」Tab 里按艺人名找勋章，

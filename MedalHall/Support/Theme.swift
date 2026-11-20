@@ -18,6 +18,12 @@ enum Theme {
 
     static let ringColors: [Color] = [red, green, blue, orange]
 
+    /// 系统健身环（HKActivityRingView）的三环配色：活动 / 锻炼 / 站立。
+    static let moveRing = Color(red: 0.98, green: 0.07, blue: 0.31)
+    static let exerciseRing = Color(red: 0.56, green: 0.90, blue: 0.16)
+    static let standRing = Color(red: 0.12, green: 0.92, blue: 0.94)
+    static let activityRingColors: [Color] = [moveRing, exerciseRing, standRing]
+
     static let barTrack = Color(red: 0.925, green: 0.925, blue: 0.937)
     static let barFillTop = Color(red: 1.0, green: 0.373, blue: 0.310)
     static let barFillBottom = Color(red: 1.0, green: 0.231, blue: 0.188)

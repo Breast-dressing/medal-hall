@@ -22,6 +22,13 @@
 | 巅峰制作人 / 乐迷灯牌 / 星光发电站 统计页 | `FeatureStatView` |
 | 卡册、小票 | 按需求删除 |
 
+## 系统控件与实现要点
+
+- **环形进度**：`UIViewRepresentable` 桥接系统 `HKActivityRingView`（HealthKitUI），只把 0…1 的进度换算成 `HKActivitySummary` 的「当前值 / 目标值」，环形样式完全由系统绘制。系统三环固定为「活动（红）/ 锻炼（绿）/ 站立（蓝）」，所以首页的三色家族环最多展示 3 个家族，图例配色与三环顺序一一对应。
+- **条形统计图**：系统 Swift Charts（`Chart` + `BarMark`），近 7 天荣誉用「灰色轨道 + 渐变填充」两层 `BarMark` 叠出胶囊柱，不再手绘。
+- **「我的」页成员资料行**：恢复原版行为——纯展示，没有箭头、没有导航入口；周榜/月榜/勋章皮肤/已获得奖章四个二级入口才跳转。
+- **成员勋章馆**：全屏页右上角提供「关闭」，从二级页面返回根页面后可以直接退出，不会卡在成员详情。
+
 ## 结构
 
 ```
@@ -54,6 +61,8 @@ MedalHallUITests/ 关键流程 + 无障碍审计
 - 测试：36 个测试全部通过（逻辑测试 + UI 关键流程 + 无障碍审计），模拟器 iPhone 18 Pro (iOS 27.2)
 - 产物：`MedalHall-unsigned.ipa`（Job artifact `MedalHall-unsigned-ipa`）
 - Bundle ID：`com.breastdressing.medalhall`，显示名「勋章馆」
+- 截图验证：CI 用 `-demo-data` 启动 App 截 `launch.png`；`MedalHallUITests` 里的 `testDemoPagesRenderAndExit` 会依次进入「我的 → 家族详情 → 成员详情」并留三张截图，测试结束后用 `xcresulttool export attachments` 导出到 `build/test/screenshots`
+- 示例数据只在 `-demo-data` 启动参数下注入，正常启动不受影响
 
 ### 怎么装
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 /// 一项统计（数值 + 标签，可带箭头）。
 struct StatItem {
@@ -58,7 +59,7 @@ struct StatsRowView: View {
     }
 }
 
-/// 三环进度（外 → 内），对应原 Web 版的 renderRingHero。
+/// 三环进度里的一项（图例用）。
 struct RingItem: Identifiable {
     var label: String
     var color: Color
@@ -68,48 +69,30 @@ struct RingItem: Identifiable {
     var id: String { "\(label)-\(text)-\(percent)" }
 }
 
+/// 三环进度：系统 `HKActivityRingView` + 图例。
+///
+/// 圆环本身完全交给系统控件（`ActivityRingsView`），这里只负责排版与图例。
 struct RingHeroView: View {
     var items: [RingItem]
     var showsLegend: Bool = true
     var size: CGFloat = 200
 
-    private let radii: [CGFloat] = [84, 62, 40, 22]
-    private let lineWidth: CGFloat = 13
-
     var body: some View {
         HStack(spacing: 20) {
-            rings
+            ActivityRingsView(items: items)
+                .frame(width: size, height: size)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(accessibilityText)
+
             if showsLegend && !items.isEmpty {
                 legend
             }
         }
         .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText)
     }
 
     private var accessibilityText: String {
         items.map { "\($0.label) \($0.text)" }.joined(separator: "，")
-    }
-
-    private var rings: some View {
-        ZStack {
-            Circle()
-                .fill(Theme.card)
-                .frame(width: 32, height: 32)
-            ForEach(Array(items.prefix(4).enumerated()), id: \.offset) { pair in
-                let radius = radii[min(pair.offset, radii.count - 1)]
-                Circle()
-                    .stroke(pair.element.color.opacity(0.16), lineWidth: lineWidth)
-                    .frame(width: radius * 2, height: radius * 2)
-                Circle()
-                    .trim(from: 0, to: min(max(pair.element.percent, 0.004), 1))
-                    .stroke(pair.element.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: radius * 2, height: radius * 2)
-            }
-        }
-        .frame(width: size, height: size)
     }
 
     private var legend: some View {
@@ -134,7 +117,7 @@ struct RingHeroView: View {
     }
 }
 
-/// 近 7 天荣誉条形图（Apple 健身风）。
+/// 近 7 天荣誉条形图。使用系统 Swift Charts（`Chart` + `BarMark`），不手绘条形。
 struct BarChartView: View {
     var title: String
     /// 真实数据（周一…周日）；为空或全 0 时使用原 Web 版的占位高度。
@@ -142,52 +125,77 @@ struct BarChartView: View {
 
     private let labels = ["一", "二", "三", "四", "五", "六", "日"]
     private let placeholder: [Double] = [72, 45, 88, 60, 78, 38, 66]
-    private let chartHeight: CGFloat = 132
-    private let barWidth: CGFloat = 22
 
-    private var fractions: [Double] {
+    private struct DayBar: Identifiable {
+        var index: Int
+        var fraction: Double
+
+        var id: Int { index }
+    }
+
+    private var bars: [DayBar] {
+        let fractions: [Double]
         if let values, values.count == 7, values.contains(where: { $0 > 0 }) {
             let maxValue = max(values.max() ?? 1, 1)
-            return values.map { min(1, max(0, $0 / maxValue)) }
+            fractions = values.map { min(1, max(0, $0 / maxValue)) }
+        } else {
+            fractions = placeholder.map { $0 / 100 }
         }
-        return placeholder.map { $0 / 100 }
+        return fractions.enumerated().map { index, fraction in
+            DayBar(index: index, fraction: max(fraction, 0.02))
+        }
+    }
+
+    private var fill: LinearGradient {
+        LinearGradient(
+            colors: [Theme.barFillTop, Theme.barFillBottom],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Theme.secondaryText)
                 .accessibilityAddTraits(.isHeader)
 
-            HStack(alignment: .bottom, spacing: 4) {
-                ForEach(0..<7, id: \.self) { index in
-                    VStack(spacing: 8) {
-                        ZStack(alignment: .bottom) {
-                            Capsule()
-                                .fill(Theme.barTrack)
-                                .frame(width: barWidth, height: chartHeight)
-                            if fractions[index] > 0 {
-                                Capsule()
-                                    .fill(LinearGradient(
-                                        colors: [Theme.barFillTop, Theme.barFillBottom],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    ))
-                                    .frame(width: barWidth, height: max(8, chartHeight * fractions[index]))
-                            }
-                        }
-                        .frame(height: chartHeight, alignment: .bottom)
+            Chart {
+                ForEach(bars) { bar in
+                    BarMark(
+                        x: .value("星期", bar.index),
+                        y: .value("轨道", 1.0),
+                        width: .fixed(22)
+                    )
+                    .foregroundStyle(Theme.barTrack)
+                    .cornerRadius(11)
 
-                        Text(labels[index])
-                            .font(.system(size: 13))
-                            .foregroundStyle(Theme.secondaryText)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("周\(labels[index])")
+                    BarMark(
+                        x: .value("星期", bar.index),
+                        y: .value("荣誉", bar.fraction),
+                        width: .fixed(22)
+                    )
+                    .foregroundStyle(fill)
+                    .cornerRadius(11)
                 }
             }
+            .chartXScale(domain: -0.5...6.5)
+            .chartYScale(domain: 0...1)
+            .chartYAxis(.hidden)
+            .chartXAxis {
+                AxisMarks(values: Array(0...6)) { value in
+                    AxisValueLabel {
+                        if let index = value.as(Int.self), labels.indices.contains(index) {
+                            Text(labels[index])
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                    }
+                }
+            }
+            .frame(height: 168)
+            .accessibilityLabel(title)
         }
     }
 }

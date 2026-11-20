@@ -113,11 +113,19 @@ jobs:
           test -f "$APP/Assets.car"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = "$BUNDLE_ID"
           xcrun simctl install "${{ steps.prep.outputs.udid }}" "$APP"
-          xcrun simctl launch "${{ steps.prep.outputs.udid }}" "$BUNDLE_ID"
-          sleep 4
+          # 用示例数据启动，截图里能看到系统健身环与 Swift Charts 条形图
+          xcrun simctl launch "${{ steps.prep.outputs.udid }}" "$BUNDLE_ID" -demo-data
+          sleep 6
           xcrun simctl io "${{ steps.prep.outputs.udid }}" screenshot "$OUT/launch.png"
           xcrun simctl spawn "${{ steps.prep.outputs.udid }}" log show --last 2m --style compact \
             --predicate "process == '${SCHEME}'" > "$OUT/app.log" 2>&1 || true
+      - name: Export UI test screenshots
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT/screenshots"
+          xcrun xcresulttool export attachments --path "$OUT/Test.xcresult" --output-path "$OUT/screenshots" || true
+          find "$OUT/screenshots" -type f -name '*.png' | head -20
       - name: Write test report
         id: report
         if: ${{ !cancelled() }}

@@ -35,11 +35,12 @@ struct MemberMedalHomeView: View {
 
     // MARK: - 环
 
+    /// 与系统三环顺序一致：活动环（红）/ 锻炼环（绿）/ 站立环（蓝）。
     private var memberRings: [RingItem] {
         [
-            RingItem(label: "本周荣誉值", color: Theme.green, text: "--", percent: 0),
-            RingItem(label: "付费荣誉值", color: Theme.red, text: "--", percent: 0),
-            RingItem(label: "乐迷值", color: Theme.blue, text: model.fanText, percent: model.fan?.progress ?? 0)
+            RingItem(label: "本周荣誉值", color: Theme.moveRing, text: "--", percent: 0),
+            RingItem(label: "付费荣誉值", color: Theme.exerciseRing, text: "--", percent: 0),
+            RingItem(label: "乐迷值", color: Theme.standRing, text: model.fanText, percent: model.fan?.progress ?? 0)
         ]
     }
 

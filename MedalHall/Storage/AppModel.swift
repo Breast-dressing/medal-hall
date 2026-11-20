@@ -20,7 +20,9 @@ final class AppModel {
     init(client: QQMusicClient = .shared) {
         self.client = client
 
-        if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
+        if DemoSupport.isEnabled {
+            DemoSupport.seed()
+        } else if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
             Persistence.reset()
         }
 

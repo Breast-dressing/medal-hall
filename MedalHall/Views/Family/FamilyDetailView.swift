@@ -110,11 +110,12 @@ struct FamilyDetailView: View {
         }
     }
 
+    /// 与系统三环顺序一致：活动环（红）/ 锻炼环（绿）/ 站立环（蓝）。
     private var familyRingItems: [RingItem] {
         [
-            RingItem(label: "本周总荣誉", color: Theme.red, text: "--", percent: 0),
-            RingItem(label: "上周总荣誉", color: Theme.green, text: "--", percent: 0),
-            RingItem(label: "付费人数", color: Theme.blue, text: "--", percent: 0)
+            RingItem(label: "本周总荣誉", color: Theme.moveRing, text: "--", percent: 0),
+            RingItem(label: "上周总荣誉", color: Theme.exerciseRing, text: "--", percent: 0),
+            RingItem(label: "付费人数", color: Theme.standRing, text: "--", percent: 0)
         ]
     }
 

@@ -47,6 +47,55 @@ final class MedalHallUITests: XCTestCase {
         XCTAssertTrue(app.buttons["添加家族后显示家族荣誉环"].waitForExistence(timeout: 5))
     }
 
+    /// 用示例数据（-demo-data）跑通三个主要页面并留截图：我的 / 家族详情 / 成员详情。
+    /// 同时验证「已获得奖章」入口可以返回并关闭，不会卡在成员详情页。
+    func testDemoPagesRenderAndExit() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-demo-data"]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["我的"].waitForExistence(timeout: 20))
+        attach(app.screenshot(), name: "01-home")
+
+        let familyCard = app.buttons["打开石榴花"]
+        XCTAssertTrue(familyCard.waitForExistence(timeout: 10))
+        familyCard.tap()
+        XCTAssertTrue(app.staticTexts["不达标成员"].waitForExistence(timeout: 20))
+        attach(app.screenshot(), name: "02-family-detail")
+
+        swipeBack(in: app)
+        XCTAssertTrue(app.staticTexts["我的"].waitForExistence(timeout: 10))
+
+        let medalStat = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "已获得奖章"))
+            .firstMatch
+        XCTAssertTrue(medalStat.waitForExistence(timeout: 10))
+        medalStat.tap()
+        XCTAssertTrue(app.navigationBars["全部勋章"].waitForExistence(timeout: 20))
+
+        swipeBack(in: app)
+        XCTAssertTrue(app.navigationBars["成员详情"].waitForExistence(timeout: 20))
+        attach(app.screenshot(), name: "03-member-detail")
+
+        let close = app.buttons["关闭"]
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        close.tap()
+        XCTAssertTrue(app.staticTexts["我的"].waitForExistence(timeout: 10))
+    }
+
+    private func attach(_ screenshot: XCUIScreenshot, name: String) {
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func swipeBack(in app: XCUIApplication) {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.5))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: end)
+    }
+
     /// 无障碍审计：收集问题写进附件。配置里 accessibility_audit 为 warn，不阻断流水线。
     func testAccessibilityAuditOfHome() throws {
         let app = launchApp()
